@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오프라인 성경 뷰어</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { display: flex; }
+        .column { width: 50%; padding: 10px; border-right: 1px solid #ccc; }
+        .chapter-list, .verse-list { display: none; }
+        ul { list-style: none; padding: 0; }
+        li { cursor: pointer; padding: 5px; border-bottom: 1px solid #ddd; }
+        li:hover { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+
+    <h1>오프라인 성경 뷰어</h1>
+
+    <div class="container">
+        <div class="column" id="bible-titles">
+            <h2>성경 목록</h2>
+            <ul id="title-list"></ul>
+        </div>
+        <div class="column chapter-list" id="bible-chapters">
+            <h2 id="selected-title"></h2>
+            <ul id="chapter-list"></ul>
+        </div>
+        <div class="column verse-list" id="bible-verses">
+            <h2 id="selected-chapter"></h2>
+            <ul id="verse-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        let bibleData = [];  // JSON 데이터를 저장할 변수
+
+        // JSON 파일 로드
+        fetch('bible.json')
+            .then(response => response.json())
+            .then(data => {
+                bibleData = data;
+                showTitles();
+            });
+
+        // 성경 목록 표시
+        function showTitles() {
+            const titleList = document.getElementById("title-list");
+            titleList.innerHTML = "";
+
+            // 제목(책) 목록 가져오기
+            const titles = [...new Set(bibleData.map(item => item.title))];
+
+            titles.forEach(title => {
+                const li = document.createElement("li");
+                li.textContent = title;
+                li.onclick = () => showChapters(title);
+                titleList.appendChild(li);
+            });
+        }
+
+        // 특정 책(성경)을 클릭하면 해당 책의 장 목록 표시
+        function showChapters(title) {
+            document.getElementById("bible-chapters").style.display = "block";
+            document.getElementById("selected-title").textContent = title;
+
+            const chapterList = document.getElementById("chapter-list");
+            chapterList.innerHTML = "";
+
+            // 해당 책의 장 번호만 가져오기
+            const chapters = [...new Set(bibleData.filter(item => item.title === title).map(item => item.chapter))];
+
+            chapters.forEach(chapter => {
+                const li = document.createElement("li");
+                li.textContent = chapter;
+                li.onclick = () => showVerses(title, chapter);
+                chapterList.appendChild(li);
+            });
+        }
+
+        // 특정 장을 클릭하면 해당 장의 절 목록 표시
+        function showVerses(title, chapter) {
+            document.getElementById("bible-verses").style.display = "block";
+            document.getElementById("selected-chapter").textContent = `${title} ${chapter}`;
+
+            const verseList = document.getElementById("verse-list");
+            verseList.innerHTML = "";
+
+            // 해당 장의 절 가져오기
+            const verses = bibleData.filter(item => item.title === title && item.chapter === chapter);
+
+            verses.forEach(verse => {
+                const li = document.createElement("li");
+                li.textContent = verse.verse;
+                verseList.appendChild(li);
+            });
+        }
+    </script>
+
+</body>
+</html>
