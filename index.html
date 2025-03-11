@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바른성경</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px; }
+        .chapter-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px; }
+        .item, .back-btn, .home-btn { padding: 10px; border: 1px solid black; cursor: pointer; }
+        .hidden { display: none; }
+        .container { margin: 20px; }
+        .verse-container .item { text-align: left; }
+    </style>
+</head>
+<body>
+    <h1>바른성경</h1>
+    <div id="book-container" class="grid"></div>
+    <div id="chapter-container" class="hidden container chapter-grid"></div>
+    <div id="verse-container" class="hidden container verse-container"></div>
+    <div id="nav-buttons" class="hidden container">
+        <button class="back-btn" onclick="goBack()">뒤로가기</button>
+        <button class="home-btn" onclick="goHome()">처음으로</button>
+    </div>
+    
+    <script>
+        let bibleData = [];
+        let historyStack = [];
+        
+        async function loadBible() {
+            const response = await fetch('bible.json');
+            bibleData = await response.json();
+            displayBooks();
+        }
+
+        function displayBooks() {
+            const bookContainer = document.getElementById("book-container");
+            bookContainer.innerHTML = "";
+            const books = [...new Set(bibleData.map(entry => entry.title))];
+            
+            books.forEach(bookTitle => {
+                const div = document.createElement("div");
+                div.className = "item";
+                div.innerText = bookTitle;
+                div.onclick = () => showChapters(bookTitle);
+                bookContainer.appendChild(div);
+            });
+        }
+        
+        function showChapters(bookTitle) {
+            historyStack.push(displayBooks);
+            document.getElementById("book-container").classList.add("hidden");
+            const chapterContainer = document.getElementById("chapter-container");
+            chapterContainer.innerHTML = "";
+            chapterContainer.classList.remove("hidden");
+            
+            const chapters = [...new Set(bibleData.filter(entry => entry.title === bookTitle).map(entry => entry.chapter))];
+            
+            chapters.forEach(chapter => {
+                const div = document.createElement("div");
+                div.className = "item";
+                div.innerText = chapter;
+                div.onclick = () => showVerses(bookTitle, chapter);
+                chapterContainer.appendChild(div);
+            });
+            document.getElementById("nav-buttons").classList.remove("hidden");
+        }
+        
+        function showVerses(bookTitle, chapter) {
+            historyStack.push(() => showChapters(bookTitle));
+            document.getElementById("chapter-container").classList.add("hidden");
+            const verseContainer = document.getElementById("verse-container");
+            verseContainer.innerHTML = "";
+            verseContainer.classList.remove("hidden");
+            
+            const verses = bibleData.filter(entry => entry.title === bookTitle && entry.chapter === chapter);
+            
+            verses.forEach(entry => {
+                const div = document.createElement("div");
+                div.className = "item";
+                div.innerText = entry.verse;
+                verseContainer.appendChild(div);
+            });
+        }
+        
+        function goBack() {
+            if (historyStack.length > 0) {
+                const lastView = historyStack.pop();
+                document.getElementById("chapter-container").classList.add("hidden");
+                document.getElementById("verse-container").classList.add("hidden");
+                lastView();
+            } else {
+                goHome();
+            }
+        }
+        
+        function goHome() {
+            historyStack = [];
+            document.getElementById("chapter-container").classList.add("hidden");
+            document.getElementById("verse-container").classList.add("hidden");
+            document.getElementById("nav-buttons").classList.add("hidden");
+            document.getElementById("book-container").classList.remove("hidden");
+        }
+        
+        loadBible();
+    </script>
+</body>
+</html>
